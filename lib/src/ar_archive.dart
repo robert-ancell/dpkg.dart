@@ -4,14 +4,18 @@ import 'dart:typed_data';
 
 /// An object used for accessing Ar format archives.
 class ArArchive {
-  final String _path;
-  RandomAccessFile? _file;
+  RandomAccessFile _file;
+  final int _offset;
+  final int _size;
   List<ArFile>? _headers;
   bool _signatureChecked = false;
   bool _signatureIsValid = false;
 
-  /// Creates an object access an Ar achive at [path].
-  ArArchive(String path) : _path = path;
+  /// Creates an object access an Ar achive in [file]
+  ArArchive(RandomAccessFile file, {int offset = 0, int size = -1})
+      : _file = file,
+        _offset = offset,
+        _size = size;
 
   /// Gets the files present in this archive.
   Future<List<ArFile>> getFiles() async {
@@ -22,20 +26,19 @@ class ArArchive {
     return _headers!;
   }
 
-  /// Close the archive.
-  Future<void> close() async {
-    if (_file != null) {
-      await _file!.close();
-    }
-  }
-
   // Reads [length] bytes from [offset].
   Future<Uint8List> _read(int offset, int length) async {
-    if (_file == null) {
-      _file = await File(_path).open();
+    await _file.setPosition(_offset + offset);
+    return _file.read(_clampLength(offset, length));
+  }
+
+  // Get the maximum length to read to avoid hitting the size limit.
+  int _clampLength(int offset, int length) {
+    if (_size >= 0 && offset + length > _size) {
+      return _size - offset;
+    } else {
+      return length;
     }
-    await _file!.setPosition(offset);
-    return _file!.read(length);
   }
 
   // Checks if the archive file has the correct signature.
@@ -46,14 +49,23 @@ class ArArchive {
     _signatureChecked = true;
 
     var data = await _read(0, 8);
-    _signatureIsValid = data == ascii.encode('!<arch>\n');
+    _signatureIsValid = data[0] == 33 && // '!'
+        data[1] == 60 && // '<'
+        data[2] == 97 && // 'a'
+        data[3] == 114 && // 'r'
+        data[4] == 99 && // 'c'
+        data[5] == 104 && // 'h'
+        data[6] == 62 && // '>'
+        data[7] == 10; // '\n'
 
     return _signatureIsValid;
   }
 
   // Reads all the file headers from the archive.
   Future<List<ArFile>> _readFileHeaders() async {
-    await _checkSignature();
+    if (!await _checkSignature()) {
+      throw 'Invalid Ar signature';
+    }
     var offset = 8;
     var headers = <ArFile>[];
     while (true) {

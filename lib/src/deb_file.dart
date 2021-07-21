@@ -1,16 +1,29 @@
+import 'dart:io';
+
 import 'ar_archive.dart';
+import 'xz_archive.dart';
 
 class DebFile {
-  // The archive that is the .deb file.
-  final ArArchive _archive;
+  /// Path to the .deb file.
+  final String path;
 
-  DebFile(String path) : _archive = ArArchive(path);
+  // The .deb file.
+  RandomAccessFile? _file;
+
+  DebFile(this.path);
 
   Future<DebControl> getControl() async {
-    var files = await _archive.getFiles();
+    var debFile = await _open();
+    var archive = ArArchive(debFile);
+    var files = await archive.getFiles();
 
     for (var file in files) {
-      if (file.identifier == 'control.tar.gz' || file.identifier == 'control.tar.xz') {
+      if (file.identifier == 'control.tar.gz') {
+        return DebControl();
+      } else if (file.identifier == 'control.tar.xz') {
+        var controlArchive =
+            XzArchive(debFile, offset: file.offset, size: file.size);
+        await controlArchive.decode();
         return DebControl();
       }
     }
@@ -20,7 +33,16 @@ class DebFile {
 
   /// Close the deb file.
   Future<void> close() async {
-    await _archive.close();
+    if (_file != null) {
+      await _file!.close();
+    }
+  }
+
+  Future<RandomAccessFile> _open() async {
+    if (_file == null) {
+      _file = await File(path).open();
+    }
+    return _file!;
   }
 }
 
