@@ -23,7 +23,7 @@ class DebFile {
       } else if (file.identifier == 'control.tar.xz') {
         var controlArchive =
             XzArchive(debFile, offset: file.offset, size: file.size);
-        await controlArchive.decode();
+        print(await controlArchive.getStreams());
         return DebControl();
       }
     }
