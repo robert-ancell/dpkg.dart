@@ -117,6 +117,7 @@ class XzArchive {
       uncompressedSize = value.value;
       o += value.length;
     }
+    var filters = <XzFilter>[];
     for (var i = 0; i < nFilters; i++) {
       var value = await _readMultibyteInteger(o);
       var id = value.value;
@@ -124,7 +125,44 @@ class XzArchive {
       value = await _readMultibyteInteger(o);
       var propertiesLength = value.value;
       o += value.length;
+      var properties = await _read(o, propertiesLength);
       o += propertiesLength;
+
+      XzFilter filter;
+      switch (id) {
+        case 0x03:
+          throw 'Delta filter not supported';
+          break;
+        case 0x04:
+          throw 'x86 filter not supported';
+          break;
+        case 0x05:
+          throw 'PowerPC filter not supported';
+          break;
+        case 0x06:
+          throw 'IA64 filter not supported';
+          break;
+        case 0x07:
+          throw 'ARM filter not supported';
+          break;
+        case 0x08:
+          throw 'ARM Thumb filter not supported';
+          break;
+        case 0x09:
+          throw 'SPARC filter not supported';
+          break;
+        case 0x21:
+          if (propertiesLength != 1) {
+            throw 'Invalid LZMA2 filter properties';
+          }
+          var dictionarySize = properties[0] & 0x3f;
+          filter = XzLzma2Filter(dictionarySize: dictionarySize);
+          break;
+        default:
+          throw 'Unknown .xz block filter $id';
+          break;
+      }
+      filters.add(filter);
     }
 
     // Add padding
@@ -168,6 +206,7 @@ class XzArchive {
         length: headerLength + compressedLength + paddingLength + checkLength,
         dataOffset: offset + headerLength,
         dataLength: compressedLength,
+        filters: filters,
         uncompressedSize: uncompressedSize);
   }
 
@@ -273,6 +312,9 @@ class XzBlock {
   // Length of the the compressed data in bytes.
   final int dataLength;
 
+  // Filters applied to the compressed data.
+  final List<XzFilter> filters;
+
   // Uncompressed size in bytes.
   final int uncompressedSize;
 
@@ -280,11 +322,25 @@ class XzBlock {
       {required this.length,
       required this.dataOffset,
       required this.dataLength,
+      required this.filters,
       required this.uncompressedSize});
 
   @override
   String toString() =>
-      'XzBlock(length: $length, dataOffset: $dataOffset, dataLength: $dataLength, uncompressedSize: $uncompressedSize)';
+      'XzBlock(length: $length, dataOffset: $dataOffset, dataLength: $dataLength, filters: $filters, uncompressedSize: $uncompressedSize)';
+}
+
+class XzFilter {
+  const XzFilter();
+}
+
+class XzLzma2Filter extends XzFilter {
+  final int dictionarySize;
+
+  const XzLzma2Filter({required this.dictionarySize});
+
+  @override
+  String toString() => 'XzLzma2Filter(dictionarySize: $dictionarySize)';
 }
 
 class _XzMultibyteInteger {
