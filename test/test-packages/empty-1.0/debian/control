@@ -1,0 +1,14 @@
+Source: empty
+Section: devel
+Priority: optional
+Maintainer: Robert Ancell <robert.ancell@canonical.com>
+Build-Depends: debhelper-compat (= 12)
+Standards-Version: 4.3.0
+
+Package: empty
+Architecture: all
+Depends: ${misc:Depends}
+Description: Test package with an empty binary file
+ This is a test package, to test dpkg.dart.
+ .
+ Dart is a client-optimized language for fast apps on any platform.

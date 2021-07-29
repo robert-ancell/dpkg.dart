@@ -1,1 +1,1 @@
-export 'src/deb_file.dart';
+export 'src/deb_binary_file.dart';

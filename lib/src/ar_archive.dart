@@ -26,6 +26,11 @@ class ArArchive {
     return _headers!;
   }
 
+  /// Gets the contents for a file.
+  Future<Uint8List> readFile(ArFile file) async {
+    return _read(file.offset, file.size);
+  }
+
   // Reads [length] bytes from [offset].
   Future<Uint8List> _read(int offset, int length) async {
     await _file.setPosition(_offset + offset);

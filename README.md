@@ -5,7 +5,11 @@ Provides classes to extract Debian packages.
 ```dart
 import 'package:dpkg/dpkg.dart';
 
-void main() async {
+void main(List<String> args) async {
+  var f = DebBinaryFile(args.first);
+  var control = await f.getControl();
+  print (control.version);
+  f.close();
 }
 ```
 
