@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 /// An object used for accessing Ar format archives.
 class ArArchive {
-  RandomAccessFile _file;
+  final RandomAccessFile _file;
   final int _offset;
   final int _size;
   List<ArFile>? _headers;
@@ -19,10 +19,7 @@ class ArArchive {
 
   /// Gets the files present in this archive.
   Future<List<ArFile>> getFiles() async {
-    if (_headers == null) {
-      _headers = await _readFileHeaders();
-    }
-
+    _headers ??= await _readFileHeaders();
     return _headers!;
   }
 

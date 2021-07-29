@@ -43,9 +43,7 @@ class DebBinaryFile {
   }
 
   Future<RandomAccessFile> _open() async {
-    if (_file == null) {
-      _file = await File(path).open();
-    }
+    _file ??= await File(path).open();
     return _file!;
   }
 

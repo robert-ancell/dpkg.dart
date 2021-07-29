@@ -39,8 +39,8 @@ class DebControlFile {
   }
 
   bool _isEmptyLine(String line) {
-    for (var c in ascii.encode(line)) {
-      if (c != ' ' && c != '\t') {
+    for (var i = 0; i < line.length; i++) {
+      if (line[i] != ' ' && line[i] != '\t') {
         return false;
       }
     }
